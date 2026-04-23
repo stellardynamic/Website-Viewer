@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Website Viewer v2</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%234da3ff'/%3E%3Cpath d='M4 5h8M4 8h8M4 11h5' stroke='%23061020' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">V2</div>
+        <div>
+          <div class="brand-title">Website Viewer</div>
+          <div class="brand-sub">v2 · local review</div>
+        </div>
+      </div>
+
+      <div class="project-picker">
+        <button id="toggleSidebarBtn" class="icon" title="Toggle sidebar (\\)">☰</button>
+        <select id="projectSelect" aria-label="Current project"></select>
+        <button id="renameProjectBtn" class="icon" title="Rename project">✎</button>
+        <button id="newProjectBtn" class="icon" title="New project">＋</button>
+        <button id="deleteProjectBtn" class="icon hide-sm" title="Delete project">🗑</button>
+      </div>
+
+      <div class="seg" role="tablist" aria-label="View mode">
+        <button data-view="grid" class="active" title="Grid view (g)">Grid</button>
+        <button data-view="single" title="Single view (s)">Single</button>
+        <button data-view="compare" title="Compare view (c)">Compare</button>
+      </div>
+
+      <div class="seg hide-sm" role="group" aria-label="Viewport">
+        <button data-viewport="desktop" class="active" title="Desktop 1440">🖥</button>
+        <button data-viewport="tablet" title="Tablet 820">📱</button>
+        <button data-viewport="mobile" title="Mobile 390">📲</button>
+      </div>
+
+      <button id="themeBtn" class="icon" title="Toggle theme">◐</button>
+      <button id="helpBtn" class="icon" title="Keyboard shortcuts (?)">?</button>
+    </header>
+
+    <div class="main" id="mainArea">
+      <aside class="sidebar">
+        <section class="sidebar-section">
+          <h3>Add URLs</h3>
+          <div class="drop-zone" id="dropZone">
+            <textarea id="urlInput" spellcheck="false" placeholder="Paste URLs, or drop a .txt / .csv / .json / bookmarks.html file..."></textarea>
+            <div class="hint">One URL per line, or comma/space separated. Duplicates removed automatically.</div>
+          </div>
+          <div class="row">
+            <button class="primary" id="loadBtn">Load list</button>
+            <button id="appendBtn" title="Append URLs to current project">Append</button>
+            <button id="checkBtn" title="Recheck response status">Check</button>
+            <button id="importBtn" title="Import file">Import</button>
+            <input type="file" id="fileInput" accept=".txt,.csv,.json,.html,.htm" hidden>
+          </div>
+        </section>
+
+        <section class="sidebar-section">
+          <h3>Filter & sort</h3>
+          <div class="filters">
+            <input id="filter" type="search" placeholder="Search URL, host, title, notes...">
+            <div class="row">
+              <select id="verdictFilter" aria-label="Verdict filter">
+                <option value="all">All URLs</option>
+                <option value="neutral">Needs review (no verdict)</option>
+                <option value="suspicious">Any bad verdict</option>
+                <option value="parked">Parked</option>
+                <option value="for_sale">For sale</option>
+                <option value="mismatch">Mismatch</option>
+                <option value="template">Template</option>
+                <option value="dead">Dead domain (DNS/refused/TLS)</option>
+              </select>
+              <select id="reviewFilter" aria-label="Review filter">
+                <option value="all">All reviews</option>
+                <option value="unreviewed">Unreviewed</option>
+                <option value="reviewed">Reviewed</option>
+                <option value="flagged">Flagged</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div class="row">
+              <select id="statusFilter" aria-label="Status filter">
+                <option value="all">All statuses</option>
+                <option value="unchecked">Unchecked</option>
+                <option value="2xx">2xx OK</option>
+                <option value="3xx">3xx redirect</option>
+                <option value="4xx">4xx not found</option>
+                <option value="5xx">5xx server error</option>
+                <option value="err">Network error</option>
+              </select>
+            </div>
+            <div class="row">
+              <select id="tagFilter" aria-label="Tag filter">
+                <option value="all">All tags</option>
+              </select>
+              <select id="sortBy" aria-label="Sort">
+                <option value="added">Sort: added</option>
+                <option value="host">Sort: host</option>
+                <option value="title">Sort: title</option>
+                <option value="status">Sort: status</option>
+                <option value="responseMs">Sort: response time</option>
+                <option value="review">Sort: review state</option>
+                <option value="verdict">Sort: verdict</option>
+              </select>
+            </div>
+          </div>
+          <button id="autoRejectBtn" class="auto-reject-btn" disabled>
+            Auto-reject <span id="autoRejectCount">0</span> suspect URLs
+          </button>
+        </section>
+
+        <div class="bulk" id="bulkBar">
+          <span class="count" id="bulkCount">0 selected</span>
+          <button id="bulkReview" title="Cycle review state">Mark…</button>
+          <button id="bulkTag" title="Add tag">Tag…</button>
+          <button id="bulkExport">Export</button>
+          <button id="bulkCapture" title="Capture screenshots for selected">Capture</button>
+          <button id="bulkDelete" class="bad">Remove</button>
+          <button id="bulkClear" class="ghost">Clear</button>
+        </div>
+
+        <div class="list" id="list" role="listbox" aria-label="URL list"></div>
+
+        <div class="stats" id="stats">
+          <span>0 / 0</span>
+          <span class="row" style="gap:4px">
+            <button id="exportBtn" class="icon" title="Export project">⤓</button>
+            <button id="clearBtn" class="icon bad" title="Clear project">✕</button>
+          </span>
+        </div>
+      </aside>
+
+      <main class="viewer">
+        <div class="toolbar">
+          <button id="prevBtn" title="Previous (j / ↓)">‹ Prev</button>
+          <button id="nextBtn" title="Next (k / ↑)">Next ›</button>
+          <div class="current" id="current" title="Click to copy URL">No URL loaded</div>
+          <select id="densitySelect" class="hide-sm" title="Grid density">
+            <option value="cozy">Cozy</option>
+            <option value="compact">Compact</option>
+            <option value="spacious">Spacious</option>
+          </select>
+          <button id="popupBtn" title="Open in window (Enter)">Open window</button>
+          <button id="reloadBtn" title="Reload / refresh capture">Reload</button>
+          <button id="detailBtn" class="hide-sm" title="Toggle details panel">ℹ</button>
+        </div>
+
+        <div class="frame-wrap">
+          <div class="view-root active" id="gridView">
+            <div class="grid-view">
+              <div class="thumb-grid density-cozy" id="thumbGrid"></div>
+              <div style="text-align:center; padding: 12px 0;">
+                <button id="loadMore" hidden>Load more</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="view-root" id="singleView">
+            <div class="single-view" id="singleLayout">
+              <div class="iframe-wrap">
+                <iframe id="frame" title="Website preview" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                <div class="frame-help" id="frameHelp">
+                  <strong>Preview may be blocked.</strong><br>
+                  Many sites refuse to render in an iframe. Open it in a real window for the full page.
+                  <div class="row">
+                    <button id="frameHelpOpen">Open window</button>
+                    <button id="frameHelpDismiss" class="ghost">Dismiss</button>
+                  </div>
+                </div>
+              </div>
+              <aside class="detail" id="detail">
+                <div>
+                  <h4>Verdict</h4>
+                  <div class="row" style="gap:8px; flex-wrap: wrap;" id="verdictRow"></div>
+                  <ul class="evidence-list" id="evidenceList" style="margin-top:8px;"></ul>
+                  <div class="row" style="gap:4px; margin-top:8px; font-size: 11px; color: var(--muted);">
+                    <button id="reclassifyBtn" class="ghost" title="Re-run classifier">Re-classify</button>
+                  </div>
+                </div>
+                <div>
+                  <h4>Details</h4>
+                  <dl class="kv" id="detailKv"></dl>
+                </div>
+                <div>
+                  <h4>Review</h4>
+                  <div class="review-buttons" id="reviewButtons">
+                    <button data-review="unreviewed">Unreviewed</button>
+                    <button data-review="reviewed">Reviewed</button>
+                    <button data-review="flagged">Flagged</button>
+                    <button data-review="approved">Approved</button>
+                    <button data-review="rejected">Rejected</button>
+                  </div>
+                </div>
+                <div>
+                  <h4>Tags</h4>
+                  <div class="tag-editor" id="tagEditor"></div>
+                  <div class="tag-suggest" id="tagSuggest"></div>
+                  <div class="row" style="margin-top:6px">
+                    <input type="text" id="tagInput" placeholder="Add tag…">
+                    <button id="tagAdd">Add</button>
+                  </div>
+                </div>
+                <div>
+                  <h4>Notes</h4>
+                  <textarea id="notesArea" class="notes-area" placeholder="Add notes for this URL…"></textarea>
+                </div>
+              </aside>
+            </div>
+          </div>
+
+          <div class="view-root" id="compareView">
+            <div class="toolbar" style="border-bottom: 1px solid var(--line); border-top: 0;">
+              <button id="compareAdd">+ Add current</button>
+              <button id="compareClear">Clear</button>
+              <div style="flex:1; color: var(--muted); font-size: 12px;">Pick 2–4 URLs to compare side-by-side across viewports.</div>
+              <div class="seg" id="compareCols">
+                <button data-cols="2" class="active">2</button>
+                <button data-cols="3">3</button>
+                <button data-cols="4">4</button>
+              </div>
+            </div>
+            <div class="compare-view cols-2" id="compareGrid"></div>
+          </div>
+
+          <div class="empty" id="empty">
+            <div class="hint">
+              <strong>Load a list to begin.</strong><br>
+              Paste URLs or drop a file into the sidebar. Status codes, titles, favicons, and previews load automatically.<br>
+              Press <span class="kbd">?</span> for keyboard shortcuts.
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="undo-banner" id="undoBanner" role="status" aria-live="polite" hidden>
+    <span id="undoMessage"></span>
+    <div class="undo-actions">
+      <button id="undoBtn" class="primary">Undo (<span id="undoCountdown">20</span>s)</button>
+      <button id="undoKeepBtn" class="ghost">Keep</button>
+    </div>
+  </div>
+
+  <!-- Help modal -->
+  <div class="modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 id="helpTitle">Keyboard shortcuts</h2>
+        <button class="icon ghost" data-close-modal>✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="help-table">
+          <div class="k"><span class="kbd">J</span> <span class="kbd">↓</span></div><div class="d">Next URL</div>
+          <div class="k"><span class="kbd">K</span> <span class="kbd">↑</span></div><div class="d">Previous URL</div>
+          <div class="k"><span class="kbd">←</span> <span class="kbd">→</span></div><div class="d">Prev / next</div>
+          <div class="k"><span class="kbd">Enter</span></div><div class="d">Open current URL in a popup window</div>
+          <div class="k"><span class="kbd">G</span></div><div class="d">Grid view</div>
+          <div class="k"><span class="kbd">S</span></div><div class="d">Single view</div>
+          <div class="k"><span class="kbd">C</span></div><div class="d">Compare view</div>
+          <div class="k"><span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span></div><div class="d">Viewport: desktop / tablet / mobile</div>
+          <div class="k"><span class="kbd">R</span></div><div class="d">Recheck statuses</div>
+          <div class="k"><span class="kbd">X</span></div><div class="d">Toggle select on current</div>
+          <div class="k"><span class="kbd">A</span></div><div class="d">Select all (filtered)</div>
+          <div class="k"><span class="kbd">Shift</span>+<span class="kbd">A</span></div><div class="d">Clear selection</div>
+          <div class="k"><span class="kbd">Y</span></div><div class="d">Approve current &amp; move next</div>
+          <div class="k"><span class="kbd">N</span></div><div class="d">Reject current &amp; move next</div>
+          <div class="k"><span class="kbd">F</span></div><div class="d">Flag current URL</div>
+          <div class="k"><span class="kbd">V</span></div><div class="d">Mark current reviewed</div>
+          <div class="k"><span class="kbd">]</span></div><div class="d">Next URL that still needs manual review (skips parked/for-sale/error)</div>
+          <div class="k"><span class="kbd">[</span></div><div class="d">Previous URL that still needs manual review</div>
+          <div class="k"><span class="kbd">Del</span></div><div class="d">Remove current / selected</div>
+          <div class="k"><span class="kbd">/</span></div><div class="d">Focus filter</div>
+          <div class="k"><span class="kbd">\\</span></div><div class="d">Toggle sidebar</div>
+          <div class="k"><span class="kbd">T</span></div><div class="d">Toggle theme</div>
+          <div class="k"><span class="kbd">?</span></div><div class="d">This help</div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="primary" data-close-modal>Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export modal -->
+  <div class="modal" id="exportModal" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 id="exportTitle">Export</h2>
+        <button class="icon ghost" data-close-modal>✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="row" style="margin-bottom: 10px; flex-wrap: wrap;">
+          <button data-export="csv">CSV</button>
+          <button data-export="json">JSON (full project)</button>
+          <button data-export="md">Markdown</button>
+          <button data-export="urls">Plain URLs</button>
+          <button data-export="html">HTML report</button>
+        </div>
+        <label class="row" style="margin-bottom: 6px;">
+          <input type="checkbox" id="exportSelectionOnly" style="width:14px;height:14px;">
+          <span>Selection only (<span id="exportSelectionCount">0</span>)</span>
+        </label>
+        <div class="hint" style="color: var(--muted); font-size: 12px;">Files save locally via your browser.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rename modal -->
+  <div class="modal" id="promptModal" role="dialog" aria-modal="true">
+    <div class="modal-card" style="width: min(460px, 100%);">
+      <div class="modal-head">
+        <h2 id="promptTitle">Prompt</h2>
+        <button class="icon ghost" data-close-modal>✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="promptInput">
+      </div>
+      <div class="modal-foot">
+        <button data-close-modal>Cancel</button>
+        <button class="primary" id="promptOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
