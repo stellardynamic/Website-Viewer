@@ -1,0 +1,23 @@
+{
+  "name": "website-viewer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local-first website review tool for checking URL lists in a thumbnail grid.",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "viewer": "node scripts/start-viewer.js",
+    "launch": "node scripts/start-viewer.js",
+    "release": "npm run check && npm audit --omit=dev && node scripts/make-release.js --zip",
+    "release:folder": "node scripts/make-release.js",
+    "release:zip": "node scripts/make-release.js --zip",
+    "check": "node --check server.js && node --check public/app.js && node --check scripts/start-viewer.js && node --check scripts/make-release.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "puppeteer": "^24.43.1"
+  }
+}
