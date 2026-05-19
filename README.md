@@ -18,6 +18,22 @@ The first launch installs the required packages and a browser for screenshots, s
 
 Keep the launcher window open while using Website Viewer. When you close all Website Viewer browser tabs, the local server shuts down automatically after a few minutes. You can also close the launcher window or press `Ctrl+C` to stop it right away.
 
+## AI-Assisted Setup
+
+If you use VS Code, Cursor, Claude Code, Codex, or another AI coding agent, you can make setup even simpler:
+
+1. Extract the release zip.
+2. Open the extracted folder in your editor.
+3. Paste this request into your AI agent:
+
+```text
+Please set up and run this local Website Viewer app for me.
+Check that Node.js 18 or newer is installed, install the app dependencies if needed, run the app with npm run launch, and tell me the local URL to open.
+Do not change the source code unless something fails and you explain the fix first.
+```
+
+The agent should use the built-in terminal in your editor. The app runs only on your computer, and closing all Website Viewer browser tabs will let the server shut itself down automatically after a few minutes.
+
 ## Manual Start
 
 From the project folder:
